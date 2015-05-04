@@ -21,7 +21,7 @@ Occasionally github will timeout while uploading the binaries, especially the la
 
 ## Supported platforms:
 
-Currently @creationix builds every luvit release on the following platforms:
+Currently @creationix builds every luvit release on the following platforms.  The desktop class machines will finish the publish in under 10 minutes, but armv6 on the older PI will take up to an hour.
 
  - Windows 8.1 amd64
  - Ubuntu 14.04 x86_64
