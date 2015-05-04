@@ -17,6 +17,8 @@ Then to make a release:
  - run `make publish-src` and `make publish` from one machine (usually my macbook that's also building the darwin binary)
  - then run `make publish` on the other bots (make sure to `git pull` and `git describe` to make sure you're building what you expect to be building).  On some systems like solaris or freebsd, you'll need `gmake publish` instead of `make publish`.
 
+Occasionally github will timeout while uploading the binaries, especially the larger sized ones with debug symbols.  If this happens, edit your release again on the github page.  Delete the failed uploads and save the changes to the release.  Then you can retry the publish.  Running `make publish-tiny` or `make publish-regular` directly will skip `make clean` and in the case of a failed upload, will jump right back to uploading the binary again.  Since this usually happens on the larger binary, I highly recommend this route.
+
 Supported platforms:
 
 Currently @creationix builds every luvit release on the following platforms:
