@@ -24,6 +24,7 @@ Currently @creationix builds every luvit release on the following platforms:
  - Windows 8.1 amd64
  - Ubuntu 14.04 x86_64
  - Ubuntu 14.04 i686
+ - OSX 10.10 x86_64
  - Raspbian armv6l (raspberry pi A+)
  - Raspbian armv7l (raspberry pi 2 B+)
  - FreeBSD 10.1 amd64
