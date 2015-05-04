@@ -19,7 +19,7 @@ Then to make a release:
 
 Occasionally github will timeout while uploading the binaries, especially the larger sized ones with debug symbols.  If this happens, edit your release again on the github page.  Delete the failed uploads and save the changes to the release.  Then you can retry the publish.  Running `make publish-tiny` or `make publish-regular` directly will skip `make clean` and in the case of a failed upload, will jump right back to uploading the binary again.  Since this usually happens on the larger binary, I highly recommend this route.
 
-Supported platforms:
+## Supported platforms:
 
 Currently @creationix builds every luvit release on the following platforms:
 
