@@ -14,7 +14,7 @@ Then to make a release:
 
  - do the normal changelog and push an annotated and signed tag to the luvi repo.
  - Go to the [luvi releases page](https://github.com/luvit/luvi/releases) and edit the release.  I copy the text from the tag containing the changelog and paste it into the description of the release you're creating.
- - run `make publish-src` from one machine (usually my macbook that's also building the darwin binary)
+ - run `make publish-src` and `make publish` from one machine (usually my macbook that's also building the darwin binary)
  - then run `make publish` on the other bots (make sure to `git pull` and `git describe` to make sure you're building what you expect to be building).  On some systems like solaris or freebsd, you'll need `gmake publish` instead of `make publish`.
 
 Supported platforms:
