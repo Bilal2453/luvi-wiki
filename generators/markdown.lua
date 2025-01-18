@@ -88,7 +88,7 @@ function Context:resolveOptions(options, tbl)
   tbl = tbl or {}
   for _, option in ipairs(options) do
     insertfmt(tbl, '`%s`%s%s',
-      option.type,
+      option.value,
       cond(option.default, ' (default)'),
       cond(option.description, ' — %s', option.description)
     )

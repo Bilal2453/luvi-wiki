@@ -26,15 +26,15 @@ functions to initiate operations.
 **Parameters:**
 - `path`: `string` — The path to the archive file the reader will read from.
 - `flags`: `integer` or `nil` — miniz initialization flags.(default: `0`)
-	- `integer` — MZ_ZIP_FLAG_CASE_SENSITIVE
-	- `integer` — MZ_ZIP_FLAG_IGNORE_PATH
-	- `integer` — MZ_ZIP_FLAG_COMPRESSED_DATA
-	- `integer` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
-	- `integer` — MZ_ZIP_FLAG_WRITE_ZIP64
-	- `integer` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
-	- `integer` — MZ_ZIP_FLAG_ASCII_FILENAME
+	- `0x0100` — MZ_ZIP_FLAG_CASE_SENSITIVE
+	- `0x0200` — MZ_ZIP_FLAG_IGNORE_PATH
+	- `0x0400` — MZ_ZIP_FLAG_COMPRESSED_DATA
+	- `0x0800` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
+	- `0x1000` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
+	- `0x2000` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
+	- `0x4000` — MZ_ZIP_FLAG_WRITE_ZIP64
+	- `0x8000` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
+	- `0x10000` — MZ_ZIP_FLAG_ASCII_FILENAME
 
 Creates a new miniz reader.
 
@@ -60,10 +60,10 @@ Creates a new miniz writer.
 **Parameters:**
 - `data`: `string` — The input buffer to inflate.
 - `flags`: `integer` or `nil` — miniz decompression flags.(default: `0`)
-	- `integer` — TINFL_FLAG_PARSE_ZLIB_HEADER - If set, the input has a valid zlib header and ends with an adler32 checksum (it's a valid zlib stream). Otherwise, the input is a raw deflate stream.
-	- `integer` — TINFL_FLAG_HAS_MORE_INPUT - If set, there are more input bytes available beyond the end of the supplied input buffer. If clear, the input buffer contains all remaining input.
-	- `integer` — TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF - If set, the output buffer is large enough to hold the entire decompressed stream. If clear, the output buffer is at least the size of the dictionary (typically 32KB).
-	- `integer` — TINFL_FLAG_COMPUTE_ADLER32 - Force adler-32 checksum computation of the decompressed bytes.
+	- `1` — TINFL_FLAG_PARSE_ZLIB_HEADER - If set, the input has a valid zlib header and ends with an adler32 checksum (it's a valid zlib stream). Otherwise, the input is a raw deflate stream.
+	- `2` — TINFL_FLAG_HAS_MORE_INPUT - If set, there are more input bytes available beyond the end of the supplied input buffer. If clear, the input buffer contains all remaining input.
+	- `4` — TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF - If set, the output buffer is large enough to hold the entire decompressed stream. If clear, the output buffer is at least the size of the dictionary (typically 32KB).
+	- `8` — TINFL_FLAG_COMPUTE_ADLER32 - Force adler-32 checksum computation of the decompressed bytes.
 
 Inflates (decompresses) the input string into memory.
 This operates on raw deflated data and not on a zlib format / ZIP archives, for that use `miniz.uncompress` / `miniz.new_reader` respectively.
@@ -76,15 +76,15 @@ This operates on raw deflated data and not on a zlib format / ZIP archives, for 
 **Parameters:**
 - `data`: `string` — The input buffer to deflate.
 - `flags`: `integer` or `nil` — Miniz compression flags.
-	- `integer` — MZ_ZIP_FLAG_CASE_SENSITIVE
-	- `integer` — MZ_ZIP_FLAG_IGNORE_PATH
-	- `integer` — MZ_ZIP_FLAG_COMPRESSED_DATA
-	- `integer` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
-	- `integer` — MZ_ZIP_FLAG_WRITE_ZIP64
-	- `integer` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
-	- `integer` — MZ_ZIP_FLAG_ASCII_FILENAME
+	- `0x0100` — MZ_ZIP_FLAG_CASE_SENSITIVE
+	- `0x0200` — MZ_ZIP_FLAG_IGNORE_PATH
+	- `0x0400` — MZ_ZIP_FLAG_COMPRESSED_DATA
+	- `0x0800` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
+	- `0x1000` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
+	- `0x2000` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
+	- `0x4000` — MZ_ZIP_FLAG_WRITE_ZIP64
+	- `0x8000` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
+	- `0x10000` — MZ_ZIP_FLAG_ASCII_FILENAME
 
 Deflates (compresses) the input data into memory.
 The output of this is the deflated binary and not a valid zlib/ZIP on its own, for that use `miniz.compress` / `miniz.new_writer` respectively.
@@ -193,19 +193,19 @@ Returns the number of archived files.
 Returns the stats of a file/directory inside the archive.
 
 **Returns**: `table` or `nil, string`
-- `uncom_size`: `integer`
-- `internal_attr`: `integer`
-- `external_attr`: `integer`
-- `comment`: `string`
-- `crc32`: `integer`
-- `index`: `integer`
 - `filename`: `string`
-- `time`: `integer`
 - `version_made_by`: `integer`
 - `version_needed`: `integer`
 - `bit_flag`: `integer`
-- `method`: `integer`
+- `time`: `integer`
 - `comp_size`: `integer`
+- `uncom_size`: `integer`
+- `crc32`: `integer`
+- `external_attr`: `integer`
+- `comment`: `string`
+- `internal_attr`: `integer`
+- `method`: `integer`
+- `index`: `integer`
 
 
 ### `miniz_reader.get_filename(reader, file_index)`
@@ -243,15 +243,15 @@ Note: Unlike other methods, this will return `false` if the index provided does 
 - `reader`: `miniz_reader` 
 - `file_index`: `integer` — A 1-based index of the desired entry.
 - `flags`: `integer` — Extraction flags.
-	- `integer` — MZ_ZIP_FLAG_CASE_SENSITIVE
-	- `integer` — MZ_ZIP_FLAG_IGNORE_PATH
-	- `integer` — MZ_ZIP_FLAG_COMPRESSED_DATA
-	- `integer` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
-	- `integer` — MZ_ZIP_FLAG_WRITE_ZIP64
-	- `integer` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
-	- `integer` — MZ_ZIP_FLAG_ASCII_FILENAME
+	- `0x0100` — MZ_ZIP_FLAG_CASE_SENSITIVE
+	- `0x0200` — MZ_ZIP_FLAG_IGNORE_PATH
+	- `0x0400` — MZ_ZIP_FLAG_COMPRESSED_DATA
+	- `0x0800` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
+	- `0x1000` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
+	- `0x2000` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
+	- `0x4000` — MZ_ZIP_FLAG_WRITE_ZIP64
+	- `0x8000` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
+	- `0x10000` — MZ_ZIP_FLAG_ASCII_FILENAME
 
 Extracts an entry into a Lua string.
 Note: Unlike other methods, if the index does not exists this will return an empty string.
@@ -267,15 +267,15 @@ Note: Unlike other methods, if the index does not exists this will return an emp
 - `reader`: `miniz_reader` 
 - `path`: `string` — The file path to locate.
 - `flags`: `integer` or `nil` — Locate flags. Available flags are `MZ_ZIP_FLAG_IGNORE_PATH, MZ_ZIP_FLAG_CASE_SENSITIVE`.
-	- `integer` — MZ_ZIP_FLAG_CASE_SENSITIVE
-	- `integer` — MZ_ZIP_FLAG_IGNORE_PATH
-	- `integer` — MZ_ZIP_FLAG_COMPRESSED_DATA
-	- `integer` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
-	- `integer` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
-	- `integer` — MZ_ZIP_FLAG_WRITE_ZIP64
-	- `integer` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
-	- `integer` — MZ_ZIP_FLAG_ASCII_FILENAME
+	- `0x0100` — MZ_ZIP_FLAG_CASE_SENSITIVE
+	- `0x0200` — MZ_ZIP_FLAG_IGNORE_PATH
+	- `0x0400` — MZ_ZIP_FLAG_COMPRESSED_DATA
+	- `0x0800` — MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY
+	- `0x1000` — MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG
+	- `0x2000` — MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY
+	- `0x4000` — MZ_ZIP_FLAG_WRITE_ZIP64
+	- `0x8000` — MZ_ZIP_FLAG_WRITE_ALLOW_READING
+	- `0x10000` — MZ_ZIP_FLAG_ASCII_FILENAME
 
 Given the path of a file, return its index.
 
@@ -352,12 +352,12 @@ Note: In case of an error, this will return a `fail`, and the deflated buffer.
 - `deflator`: `miniz_deflator` 
 - `data`: `string` — The data to deflate.
 - `flush`: `string` or `nil` — Whether or not to flush, and the type of flushing.
-	- `string` (default) — Do no flushing on this call.
-	- `string`
-	- `string`
-	- `string`
-	- `string` — Finalize the data and flush it.
-	- `string`
+	- `"no"` (default) — Do no flushing on this call.
+	- `"partial"`
+	- `"sync"`
+	- `"full"`
+	- `"finish"` — Finalize the data and flush it.
+	- `"block"`
 
 Apply deflate on provided data chunk.
 
@@ -378,12 +378,12 @@ Note: In case of an error, this will return a `fail`, and the inflate buffer.
 - `inflator`: `miniz_inflator` 
 - `data`: `string` — The data to inflate.
 - `flush`: `string` or `nil` — Whether or not to flush, and the type of flushing.
-	- `string` (default) — Do no flushing on this call.
-	- `string`
-	- `string`
-	- `string`
-	- `string` — Finalize the data and flush it.
-	- `string`
+	- `"no"` (default) — Do no flushing on this call.
+	- `"partial"`
+	- `"sync"`
+	- `"full"`
+	- `"finish"` — Finalize the data and flush it.
+	- `"block"`
 
 Apply inflate on provided data chunk.
 
