@@ -1,4 +1,14 @@
----@alias types 'module'|'text'|'class'|'functions'|'constants'
+---@alias types
+---Indicates that this section represents a module.
+---|'module'
+---A section that consists of text only.
+---|'text'
+---Indicates that this section represents a class structure.
+---|'class'
+---Indicates that this section is a list of static functions.
+---|'functions'
+---Indicates that this section is a list of constant values.
+---|'constants'
 
 ---@alias alias_types {type: string, value?: string, default?: boolean, description?: string}[]
 ---@alias alias {name: string, types: alias_types}
@@ -10,11 +20,54 @@
 ---@alias method {name: string, description: string, method_form?: string, params: params, returns: returns}
 ---@alias methods method[]
 
----@alias text_section {type: 'text', title: string, description: string, aliases: aliases}
----@alias class_section {type: 'class', title: string, description: string, name: string, parents: string[], methods: methods, aliases: aliases}
----@alias functions_section {type: 'functions', title: string, description: string, methods: methods, source?: string, aliases: aliases}
----@alias constants_section {type: 'constants', title: string, description: string, constants: {name: string, type: string, value: string}[], aliases: aliases}
----@alias meta {version: string, def_version: string, types: types, [integer]: text_section | class_section | functions_section | constants_section, name: string, title: string, description: string, [number]: meta}
+
+---@class section: table
+---@field type string
+---@field title string
+---@field description string
+---@field aliases aliases
+
+---A section that consists of text only.
+---@class text_section: section
+---@field type 'text'
+
+---A section that represents a class-like structure.
+---@class class_section: section
+---@field type 'class'
+---@field name string
+---@field parents string[]
+---@field methods methods
+
+---A section containing a list of static functions.
+---@class functions_section: section
+---@field type 'functions'
+---An array of methods definitions.
+---@field methods methods
+---@field source? string
+
+---A section containing a list of constant values.
+---@class constants_section: section
+---@field type 'constants'
+---@field constants {name: string, type: string, value: string}[]
+
+
+---@class meta: table
+---The name of this docs/meta file.
+---@field name string
+---A title for the main section.
+---@field title string
+---A description for this module.
+---@field description string
+---The version of the module documented in this table.
+---@field version string
+---The version of this *documentation*.
+---This is potentially useful when introducing what may be considered breaking change for tools using this file to generate docs.
+---@field def_version string
+---The type of the upper level section, most often a module.
+---@field type types
+---An array of sub-sections under module.
+---@field [number] text_section | class_section | functions_section | constants_section
+
 
 local fail_indicator = {
   name = 'fail',
@@ -552,7 +605,7 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
             name = 'flags',
             description = 'Extraction flags.',
             type = '@miniz.alias.mz_zip_flags',
-            optional = false,
+            optional = true,
           },
         },
         returns = {
@@ -626,6 +679,7 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
     title = '`miniz_writer` — Write archives to a file',
     description = 'Initialize a writer to create a new zlib archive.',
     parents = {},
+    aliases = {},
     methods = {
       {
         name = 'add_from_zip',
@@ -802,6 +856,7 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
     title = 'miniz_inflator` — Inflate a stream of data',
     description = 'Apply inflate on a stream of data.\nIn order to finalize the inflated data set `flush` to `"finish"`.\nNote: In case of an error, this will return a `fail`, and the inflate buffer.',
     parents = {},
+    aliases = {},
     methods = {
       {
         name = 'inflate',

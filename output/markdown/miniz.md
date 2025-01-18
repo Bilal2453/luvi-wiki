@@ -193,19 +193,19 @@ Returns the number of archived files.
 Returns the stats of a file/directory inside the archive.
 
 **Returns**: `table` or `nil, string`
+- `comp_size`: `integer`
+- `uncom_size`: `integer`
+- `index`: `integer`
+- `external_attr`: `integer`
+- `comment`: `string`
+- `crc32`: `integer`
 - `filename`: `string`
+- `time`: `integer`
+- `internal_attr`: `integer`
 - `version_made_by`: `integer`
 - `version_needed`: `integer`
 - `bit_flag`: `integer`
-- `time`: `integer`
-- `comp_size`: `integer`
-- `uncom_size`: `integer`
-- `crc32`: `integer`
-- `external_attr`: `integer`
-- `comment`: `string`
-- `internal_attr`: `integer`
 - `method`: `integer`
-- `index`: `integer`
 
 
 ### `miniz_reader.get_filename(reader, file_index)`
@@ -235,14 +235,14 @@ Note: Unlike other methods, this will return `false` if the index provided does 
 **Returns**: `boolean`
 
 
-### `miniz_reader.extract(reader, file_index, flags)`
+### `miniz_reader.extract(reader, file_index[, flags])`
 
-> method form  `reader:extract(reader, file_index, flags)`
+> method form  `reader:extract(reader, file_index[, flags])`
 
 **Parameters:**
 - `reader`: `miniz_reader` 
 - `file_index`: `integer` — A 1-based index of the desired entry.
-- `flags`: `integer` — Extraction flags.
+- `flags`: `integer` or `nil` — Extraction flags.
 	- `0x0100` — MZ_ZIP_FLAG_CASE_SENSITIVE
 	- `0x0200` — MZ_ZIP_FLAG_IGNORE_PATH
 	- `0x0400` — MZ_ZIP_FLAG_COMPRESSED_DATA

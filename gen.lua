@@ -9,7 +9,7 @@ local function dir(path)
   return path
 end
 
--- TODO: a full CLI tool
+-- TODO: a full CLI tool?
 
 local output_dir = dir('./output')
 local input_dir = dir('./modules')
