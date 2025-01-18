@@ -1,9 +1,10 @@
 ---@alias types 'module'|'text'|'class'|'functions'|'constants'
 
----@alias alias {name: string, types: {type: string, default?: boolean, description?: string}[]}
+---@alias alias_types {type: string, value?: string, default?: boolean, description?: string}[]
+---@alias alias {name: string, types: alias_types}
 ---@alias aliases alias[]
 
----@alias param {name: string, description: string, type: string, optional: boolean, default?: string}
+---@alias param {name: string, description: string, type: string, optional: boolean, omissible?: any, default?: string}
 ---@alias params param[]
 ---@alias returns {name: string, description: string, types: string, nilable?: boolean}[]
 ---@alias method {name: string, description: string, method_form?: string, params: params, returns: returns}
@@ -13,7 +14,7 @@
 ---@alias class_section {type: 'class', title: string, description: string, name: string, parents: string[], methods: methods, aliases: aliases}
 ---@alias functions_section {type: 'functions', title: string, description: string, methods: methods, source?: string, aliases: aliases}
 ---@alias constants_section {type: 'constants', title: string, description: string, constants: {name: string, type: string, value: string}[], aliases: aliases}
----@alias meta {version: string, def_version: string, types: types, [integer]: text_section | class_section | functions_section | constants_section}
+---@alias meta {version: string, def_version: string, types: types, [integer]: text_section | class_section | functions_section | constants_section, name: string, title: string, description: string, [number]: meta}
 
 local fail_indicator = {
   name = 'fail',
@@ -49,9 +50,9 @@ the rest of functions are either helpers or intended for deflate/inflate streams
 
 **Version:** 10.1.0.
 
-**Available on Luvi version:** `regular`, `tiny`.
+**Available on Luvi:** `regular`, `tiny`.
 
-**Available on platforms:** All.
+**Available on platform:** All.
 
 **Imported with:** `require('miniz')`.
 ]],
@@ -65,39 +66,48 @@ the rest of functions are either helpers or intended for deflate/inflate streams
         name = 'miniz.alias.mz_zip_flags',
         types = {
           {
-            type = '0x0100',
+            type = 'integer',
+            value = '0x0100',
             description = 'MZ_ZIP_FLAG_CASE_SENSITIVE',
           },
           {
-            type = '0x0200',
+            type = 'integer',
+            value = '0x0200',
             description = 'MZ_ZIP_FLAG_IGNORE_PATH',
           },
           {
-            type = '0x0400',
+            type = 'integer',
+            value = '0x0400',
             description = 'MZ_ZIP_FLAG_COMPRESSED_DATA',
           },
           {
-            type = '0x0800',
+            type = 'integer',
+            value = '0x0800',
             description = 'MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY',
           },
           {
-            type = '0x1000',
+            type = 'integer',
+            value = '0x1000',
             description = 'MZ_ZIP_FLAG_VALIDATE_LOCATE_FILE_FLAG',
           },
           {
-            type = '0x2000',
+            type = 'integer',
+            value = '0x2000',
             description = 'MZ_ZIP_FLAG_VALIDATE_HEADERS_ONLY',
           },
           {
-            type = '0x4000',
+            type = 'integer',
+            value = '0x4000',
             description = 'MZ_ZIP_FLAG_WRITE_ZIP64',
           },
           {
-            type = '0x8000',
+            type = 'integer',
+            value = '0x8000',
             description = 'MZ_ZIP_FLAG_WRITE_ALLOW_READING',
           },
           {
-            type = '0x10000',
+            type = 'integer',
+            value = '0x10000',
             description = 'MZ_ZIP_FLAG_ASCII_FILENAME',
           },
         },
@@ -106,19 +116,23 @@ the rest of functions are either helpers or intended for deflate/inflate streams
         name = 'miniz.alias.tinfl_decompression_flags',
         types = {
           {
-            type = '1',
+            type = 'integer',
+            value = '1',
             description = 'TINFL_FLAG_PARSE_ZLIB_HEADER - If set, the input has a valid zlib header and ends with an adler32 checksum (it\'s a valid zlib stream). Otherwise, the input is a raw deflate stream.',
           },
           {
-            type = '2',
+            type = 'integer',
+            value = '2',
             description = 'TINFL_FLAG_HAS_MORE_INPUT - If set, there are more input bytes available beyond the end of the supplied input buffer. If clear, the input buffer contains all remaining input.',
           },
           {
-            type = '4',
+            type = 'integer',
+            value = '4',
             description = 'TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF - If set, the output buffer is large enough to hold the entire decompressed stream. If clear, the output buffer is at least the size of the dictionary (typically 32KB).',
           },
           {
-            type = '8',
+            type = 'integer',
+            value = '8',
             description = 'TINFL_FLAG_COMPUTE_ADLER32 - Force adler-32 checksum computation of the decompressed bytes.',
           },
         },
@@ -222,8 +236,8 @@ set this if you have a good estimation about the archive size and you want to av
           },
           {
             name = 'flags',
-            description = 'Miniz compression flags.\nTODO: document compression flags.',
-            type = 'integer',
+            description = 'Miniz compression flags.',
+            type = '@miniz.alias.mz_zip_flags',
             optional = true,
           },
         },
@@ -411,7 +425,8 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
         name = 'miniz.alias.mz_zip_archive_file_stat',
         types = {
           {
-            type = '{index: integer, version_made_by: integer, version_needed: integer, bit_flag: integer, method: integer, time: integer, crc32: integer, comp_size: integer, uncom_size: integer, internal_attr: integer, external_attr: integer, filename: string, comment: string}',
+            type = 'table',
+            value = '{index: integer, version_made_by: integer, version_needed: integer, bit_flag: integer, method: integer, time: integer, crc32: integer, comp_size: integer, uncom_size: integer, internal_attr: integer, external_attr: integer, filename: string, comment: string}',
           },
         },
       },
@@ -535,9 +550,9 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
           },
           {
             name = 'flags',
-            description = 'Extraction flags. TODO: document mz_zip_flags.',
+            description = 'Extraction flags.',
+            type = '@miniz.alias.mz_zip_flags',
             optional = false,
-            type = 'integer',
           },
         },
         returns = {
@@ -567,8 +582,8 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
           },
           {
             name = 'flags',
-            description = 'locate flags, TODO: document MZ_ZIP_FLAG_IGNORE_PATH | MZ_ZIP_FLAG_CASE_SENSITIVE.',
-            type = 'integer',
+            description = 'Locate flags. Available flags are `MZ_ZIP_FLAG_IGNORE_PATH, MZ_ZIP_FLAG_CASE_SENSITIVE`.',
+            type = '@miniz.alias.mz_zip_flags',
             optional = true,
           },
         },
@@ -662,7 +677,7 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
           },
           {
             name = 'level_and_flags',
-            description = 'The compression level, possibly ORed with TODO document mz_zip_flags flags.',
+            description = 'The compression level, this is a number between 0-10, you may OR this with one of the `mz_zip_flags` flag values.',
             type = 'integer',
             optional = true,
             default = '0',
@@ -706,25 +721,31 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
         name = 'miniz.alias.flush_values',
         types = {
           {
-            type = '"no"',
+            type = 'string',
+            value = '"no"',
             description = 'Do no flushing on this call.',
             default = true,
           },
           {
-            type = '"partial"',
+            type = 'string',
+            value = '"partial"',
           },
           {
-            type = '"sync"',
+            type = 'string',
+            value = '"sync"',
           },
           {
-            type = '"full"',
+            type = 'string',
+            value = '"full"',
           },
           {
-            type = '"finish"',
+            type = 'string',
+            value = '"finish"',
             description = 'Finalize the data and flush it.',
           },
           {
-            type = '"block"',
+            type = 'string',
+            value = '"block"',
           },
         }
       },
@@ -827,4 +848,5 @@ set this if you have a good estimation and you want to avoid unnecessary allocat
     },
   },
 }
+
 return meta

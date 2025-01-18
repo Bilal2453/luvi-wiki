@@ -6,5 +6,8 @@
   "editor.defaultFormatter": "sumneko.lua",
   "Lua.diagnostics.disable": [
     "unused-function"
-  ]
+  ],
+  "files.associations": {
+    "miniz.h": "c"
+  }
 }

@@ -1,21 +1,48 @@
-local docs_meta = require('lminiz')
-
 local fmt = string.format
 local insert, concat = table.insert, table.concat
 
--- the final output buffer
-local markdown = {}
+---@class markdown.Context
+---@field buffer string[]
+---@field aliases_map alias_types
+local Context = {}
 
--- read all of the aliases and flatten them in a single lookup map
----@type table<string, alias>
-local aliases_map = {}
-for _, section in ipairs(docs_meta) do
-  if section.aliases then
-    for _, alias in ipairs(section.aliases) do
-      assert(not aliases_map[alias.name], 'alias with the name @' .. alias.name .. ' is already defined')
-      aliases_map[alias.name] = alias.types
+---@return markdown.Context
+function Context.initiate(docs_meta)
+  -- the final output buffer
+  local buffer = {}
+
+  -- read all of the aliases and flatten them in a single lookup map
+  ---@type table<string, alias>
+  local aliases_map = {}
+  for _, section in ipairs(docs_meta) do
+    if section.aliases then
+      for _, alias in ipairs(section.aliases) do
+        assert(not aliases_map[alias.name], 'alias with the name @' .. alias.name .. ' is already defined')
+        aliases_map[alias.name] = alias.types
+      end
     end
   end
+
+  return setmetatable({
+    buffer = buffer,
+    aliases_map = aliases_map,
+  }, {
+    __index = Context
+  })
+end
+
+-- we generate the markdown on the go essentially
+-- and any markdown output is written to the buffer through this
+function Context:write(input, ...)
+  if select('#', ...) > 0 then
+    input = input:format(...)
+  end
+  self.buffer[#self.buffer+1] = input
+end
+
+-- concat the buffer into a single string and return it
+function Context:finalize()
+  return concat(self.buffer)
 end
 
 --- if value is truthy, format s and return it, otherwise return an empty string.
@@ -48,7 +75,7 @@ end
 ---given a value such as `{filename: string, index: integer}`, return it as a table.
 ---note it only accepts relevant values defined throughout the docs.
 ---@param str string
-local function resolveTable(str, tbl)
+function Context:resolveTable(str, tbl)
   tbl = tbl or {}
   local body = str:match('{(.-)}')
   for key, value in body:gmatch('(%S+):%s*([^%s,]+)') do
@@ -57,7 +84,7 @@ local function resolveTable(str, tbl)
   return tbl
 end
 
-local function resolveOptions(options, tbl)
+function Context:resolveOptions(options, tbl)
   tbl = tbl or {}
   for _, option in ipairs(options) do
     insertfmt(tbl, '`%s`%s%s',
@@ -71,27 +98,24 @@ end
 
 ---@param type string
 ---@return string, table
-local function resolveAlias(type, collected_fields)
+function Context:resolveAlias(type, collected_fields)
   collected_fields = collected_fields or {}
   local name = type:match('^@(%S+)')
   if not name then
     return type, collected_fields
   end
 
-  local value = aliases_map[name]
+  local value = self.aliases_map[name]
   assert(value, 'could not find alias @' .. name .. ', is it really defined?')
 
-  local first_char = value[1].type:sub(1, 1)
-  if #value > 1 and first_char ~= '{' then
-    resolveOptions(value, collected_fields)
-    if first_char:match('[\'"]') then
-      type = 'string'
-    elseif tonumber(first_char) then
-      type = 'integer'
-    end
+  -- Note: when the type is table, we only respect the first
+  -- value because table aliases can't have more than one
+  type = value[1].type
+  if type == 'table' then
+    -- TODO: handle when .value is not set
+    self:resolveTable(value[1].value, collected_fields)
   else
-    resolveTable(value[1].type, collected_fields)
-    type = 'table'
+    self:resolveOptions(value, collected_fields)
   end
   return type, collected_fields
 end
@@ -113,24 +137,23 @@ local function formatBulletList(collected_tbl, prefix)
 end
 
 
--- we generate the markdown on the go essentially
--- and any markdown output is written to the buffer through this
-local function write(input, ...)
-  if select('#', ...) > 0 then
-    input = input:format(...)
-  end
-  markdown[#markdown+1] = input
-end
-
--- concat the buffer into a single string and return it
-local function finalize()
-  return concat(markdown)
-end
-
+---Given a function write its signature.
+---Example output `foo.bar(a[, b], c)`.
+---
+---The parameters are analyzed for a more consistent and standard annotation.
+---When the parameter has `omissible` set or it's an optional argument at the end
+---of the parameters it will be wrapped in `[]` to indicate it can be completely left out.
+---
+---Multiple parameters may set omissible to the same value to combine into one group.
+---That is, to group them under one shared `[]`, i.e. `a[, b, c, d]`.
+---
+---Internally this is done by parsing parameters into `collected_params`.
+---For example, `a[, b], c, [, d, e]` will become `{a, {b}, c, {d, e}}`.
+---Currently only one level down is supported (i.e. at most `a[, b]`, no `a[, b[, c]]`).
 ---@param interface string
 ---@param func method
 ---@param is_method boolean?
-local function writeFuncSignature(interface, func, is_method)
+function Context:writeFuncSignature(interface, func, is_method)
   local sep = is_method and ':' or '.'
   local name = interface .. sep .. func.name
   local collected_params = {}
@@ -142,14 +165,16 @@ local function writeFuncSignature(interface, func, is_method)
     end
   end
 
-  local last_omit_group, last_required_group
+  -- TODO: run this resolution recursively?
+  -- local last_required_group
+  local last_omit_group
   for index, param in ipairs(func.params) do
-    -- if the parameter is not optional, or isn't explicitly omittable
+    -- if the parameter is not optional, or isn't explicitly omissible
     -- and also isn't at the end of the parameters it cannot be omitted
     if not param.optional
-    or not param.omittable and last_required_param > index then
+    or not param.omissible and last_required_param > index then
       insert(collected_params, param)
-      last_required_group = #collected_params
+      -- last_required_group = #collected_params
       last_omit_group = nil
       goto next
     end
@@ -168,8 +193,8 @@ local function writeFuncSignature(interface, func, is_method)
       ['nil'] = true,
       ['true'] = true,
     }
-    if last_omit_group[1].omittable == param.omittable
-    or (pass[tostring(last_omit_group[1].omittable)] and pass[tostring(param.omittable)]) then
+    if last_omit_group[1].omissible == param.omissible
+    or (pass[tostring(last_omit_group[1].omissible)] and pass[tostring(param.omissible)]) then
       insert(last_omit_group, param)
     else
       last_omit_group = {group = true}
@@ -183,35 +208,23 @@ local function writeFuncSignature(interface, func, is_method)
   local param_buf = {}
   for index, grp in ipairs(collected_params) do
     if grp.group then
-      insertfmt(param_buf, ' [')
-      for i, param in ipairs(grp) do
-        insertfmt(param_buf, '%s%s', param.name, cond(index < #collected_params, ','))
+      insertfmt(param_buf, '[')
+      for _, param in ipairs(grp) do
+        insertfmt(param_buf, '%s%s', cond(index > 1, ', '), param.name)
       end
-      insert(param_buf, '] ')
+      insert(param_buf, ']')
     else
-      insertfmt(param_buf, '%s%s', grp.name, cond(index < last_required_group, ', '))
+      insertfmt(param_buf, '%s%s', cond(index > 1, ', '), grp.name)
+      -- insertfmt(param_buf, '%s%s', grp.name, cond(index < last_required_group, ', '))
     end
   end
-  param_buf = concat(param_buf)
-  p(param_buf)
-  os.exit()
 
-
-  for _, param in pairs(func.params) do
-    local param_name = param.name
-    if param.optional then
-      param_name = '[' .. param_name .. ']'
-    end
-    insert(collected_params, param_name)
-  end
-  if is_method then
-    table.remove(collected_params, 1)
-  end
-  local params = concat(collected_params, ', ')
-
+  local params = concat(param_buf)
   local prefix = is_method and '> method form ' or '###'
-  write('%s `%s(%s)`\n\n', prefix, name, params)
+  self:write('%s `%s(%s)`\n\n', prefix, name, params)
 end
+--[[
+-- test usage
 writeFuncSignature('', {
   name = '',
   params = {
@@ -222,25 +235,29 @@ writeFuncSignature('', {
     {
       name = 'start',
       optional = true,
+      omissible = 1,
     },
     {
       name = 'stop',
-      optional = false,
+      optional = true,
+      omissible = 1,
     },
     {
       name = 'bar',
       optional = true,
-      omittable = false,
+      omissible = false,
     },
   },
 })
+os.exit()
+]]
 
 ---@param params params
-local function writeParameters(params)
-  write('**Parameters:**\n')
+function Context:writeParameters(params)
+  self:write('**Parameters:**\n')
   local collected_params = {}
   for _, param in pairs(params) do
-    local res_type, collected_fields = resolveAlias(param.type)
+    local res_type, collected_fields = self:resolveAlias(param.type)
     local fields = formatBulletList(collected_fields, '\t')
 
     local optional, default, description = '', '', ''
@@ -267,8 +284,8 @@ local function writeParameters(params)
       cond(#fields > 0, '\n' .. fields)
     )
   end
-  write(concat(collected_params, '\n'))
-  write('\n\n')
+  self:write(concat(collected_params, '\n'))
+  self:write('\n\n')
 end
 
 --- groups returns that are not in a group, and are not separated by a group, together.
@@ -295,9 +312,9 @@ end
 
 -- the luv-style small/simple returns.
 ---@param returns returns
-local function writeReturns(returns)
+function Context:writeReturns(returns)
   if #returns == 0 then
-    return write('**Returns**: Nothing.\n')
+    return self:write('**Returns**: Nothing.\n')
   end
   local collected_groups = {} -- the returns such as `a or b or c`
   local collected_fields = {} -- the fields of any returned tables values
@@ -306,7 +323,7 @@ local function writeReturns(returns)
   for _, group in ipairs(grouped_returns) do
     local group_res = {}
     for _, rtn in ipairs(group) do
-      local value, fields = resolveAlias(rtn.types)
+      local value, fields = self:resolveAlias(rtn.types)
       if next(fields) then
         insert(collected_fields, fields)
       end
@@ -315,22 +332,22 @@ local function writeReturns(returns)
     insertfmt(collected_groups, '`%s`', concat(group_res, ', '))
   end
 
-  write('**Returns**: %s', concat(collected_groups, ' or '))
+  self:write('**Returns**: %s', concat(collected_groups, ' or '))
 
   if next(collected_fields) then
     for _, fields in ipairs(collected_fields) do
-      write('\n')
-      write(formatBulletList(fields))
+      self:write('\n')
+      self:write(formatBulletList(fields))
     end
   end
-  write('\n\n')
+  self:write('\n\n')
 end
 
 -- much more expanded and detailed returns.
 ---@param returns returns
-local function writeReturns2(returns)
+function Context:writeReturns2(returns)
   if #returns == 0 then
-    return write('**Returns**: Nothing.\n')
+    return self:write('**Returns**: Nothing.\n')
   end
   local collected_groups = {}
   local collected_fields = {}
@@ -343,7 +360,7 @@ local function writeReturns2(returns)
     local res = {}
     local fields = {}
     for _, rtn in ipairs(grouped_returns[1]) do
-      local value, field = resolveAlias(rtn.types)
+      local value, field = self:resolveAlias(rtn.types)
       insertfmt(res, '%s%s',
         value,
         cond(rtn.nilable, '?')
@@ -352,9 +369,9 @@ local function writeReturns2(returns)
         fields[rtn.types] = field
       end
     end
-    write('**Returns:** `%s`\n', concat(res, ', '))
+    self:write('**Returns:** `%s`\n', concat(res, ', '))
     for name, field in pairs(fields) do
-      write('\nFor the fields of `%s`:\n%s\n', name, formatBulletList(field))
+      self:write('\nFor the fields of `%s`:\n%s\n', name, formatBulletList(field))
     end
     return
   end
@@ -364,7 +381,7 @@ local function writeReturns2(returns)
     local group_res = {}
     local group_fields = {}
     for i, rtn in ipairs(group) do
-      local value, fields = resolveAlias(rtn.types)
+      local value, fields = self:resolveAlias(rtn.types)
       if next(fields) then
         group_fields[rtn.types] = fields
       end
@@ -383,65 +400,75 @@ local function writeReturns2(returns)
     insert(collected_fields, group_fields)
   end
 
-  write('**Returns**:\n')
+  self:write('**Returns**:\n')
 
   for i, group in ipairs(collected_groups) do
-    write(group .. '\n')
+    self:write(group .. '\n')
     if next(collected_fields[i]) then
       for name, fields in pairs(collected_fields[i]) do
-        write('\n\tFor the fields of `%s`:\n%s\n', name, formatBulletList(fields, '\t'))
+        self:write('\n\tFor the fields of `%s`:\n%s\n', name, formatBulletList(fields, '\t'))
       end
     end
     if next(collected_groups, i) then
-      write('\nOR\n')
+      self:write('\nOR\n')
     end
   end
-  write('\n')
+  self:write('\n')
 end
+-- TODO: decide which return to use.
 -- writeReturns = writeReturns2
 
 ---@param interface string
 ---@param func method
-local function writeFunction(interface, func)
+function Context:writeFunction(interface, func)
   assert(func.name, 'a function must have name')
   assert(func.params, 'a function must define params')
 
   -- the function definition
-  writeFuncSignature(interface, func)
+  self:writeFuncSignature(interface, func)
   -- method form
   if func.method_form then
     local method_interface = type(func.method_form) == 'string' and func.method_form or interface
-    writeFuncSignature(method_interface, func, true)
+    self:writeFuncSignature(method_interface, func, true)
   end
   -- parameters
   if #func.params > 0 then
-    writeParameters(func.params)
+    self:writeParameters(func.params)
   end
   -- description
   if func.description and #func.description > 0 then
-    write(func.description)
-    write('\n\n')
+    self:write(func.description)
+    self:write('\n\n')
   end
   -- returns
-  writeReturns(func.returns)
+  self:writeReturns(func.returns)
 
-  write('\n')
+  self:write('\n')
 end
 
-local function writeModule(module)
-  write('# %s\n\n', module.title)
-  write('%s\n\n', module.description)
+function Context:writeModule(module)
+  self:write('# %s\n\n', module.title)
+  self:write('%s\n\n', module.description)
 end
 
 
+---@param docs_meta meta
+local function generate(docs_meta)
+  local context = Context.initiate(docs_meta)
 
-writeModule(docs_meta)
-for _, section in ipairs(docs_meta) do
-  write('## %s\n\n', section.title)
-  write('%s\n\n', section.description)
+  context:writeModule(docs_meta)
+  for _, section in ipairs(docs_meta) do
+    context:write('## %s\n\n', section.title)
+    context:write('%s\n\n', section.description)
 
-  for _, func in pairs(section.methods) do
-    writeFunction(section.name or docs_meta.name, func)
+    for _, func in pairs(section.methods) do
+      context:writeFunction(section.name or docs_meta.name, func)
+    end
   end
+  return context:finalize()
 end
-require'fs'.writeFileSync('test.md', finalize())
+
+return {
+  generate = generate,
+  extension = '.md'
+}
