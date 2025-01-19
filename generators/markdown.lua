@@ -84,6 +84,10 @@ function Context:resolveTable(str, tbl)
   return tbl
 end
 
+---given an array of options output a formatted string array.
+---@generic T: string[]
+---@param tbl T?
+---@return T
 function Context:resolveOptions(options, tbl)
   tbl = tbl or {}
   for _, option in ipairs(options) do
@@ -96,6 +100,7 @@ function Context:resolveOptions(options, tbl)
   return tbl
 end
 
+---given a value such as `@name.of.alias`, return its value set in the aliases_map.
 ---@param type string
 ---@return string, table
 function Context:resolveAlias(type, collected_fields)
@@ -120,6 +125,8 @@ function Context:resolveAlias(type, collected_fields)
   return type, collected_fields
 end
 
+---given an array of strings or a table of key/values format it into a bullet list and return it.
+---@return string
 local function formatBulletList(collected_tbl, prefix)
   prefix = prefix or ''
   local entries = {}
@@ -137,7 +144,7 @@ local function formatBulletList(collected_tbl, prefix)
 end
 
 
----Given a function write its signature.
+---Given a function definition, write its signature into the buffer.
 ---Example output `foo.bar(a[, b], c)`.
 ---
 ---The parameters are analyzed for a more consistent and standard annotation.
@@ -415,8 +422,8 @@ function Context:writeReturns2(returns)
   end
   self:write('\n')
 end
--- TODO: decide which return to use.
--- writeReturns = writeReturns2
+-- TODO: decide which return format to use.
+Context.writeReturns = Context.writeReturns2
 
 ---@param interface string
 ---@param func method
